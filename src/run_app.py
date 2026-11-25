@@ -73,7 +73,7 @@ if st.button("Predict Delay Category"):
     ]
 
     columns = [
-        "Turnaround_Time_Mins",
+        # "Turnaround_Time_Mins",
         "Departure_Hour",
         "Time_of_Day",
         "OP_CARRIER",

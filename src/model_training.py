@@ -5,7 +5,6 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml import Pipeline
 
 
-
 def run_training():
     print("--- Starting Model Training ---")
     spark = SparkSession.builder.appName("FlightDelay_Modeling").getOrCreate()
@@ -15,7 +14,7 @@ def run_training():
 
     # TODO: UPDATE THESE COLUMN LISTS BASED ON YOUR ACTUAL DATA
     columns_to_keep = [
-        "Turnaround_Time_Mins",
+        # "Turnaround_Time_Mins",
         "Departure_Hour",
         "Time_of_Day",
         "OP_CARRIER",
@@ -26,7 +25,8 @@ def run_training():
     df = df.select(*columns_to_keep).dropna()
 
     categorical_cols = ["Time_of_Day", "OP_CARRIER", "ORIGIN", "DEST"]
-    numeric_cols = ["Turnaround_Time_Mins", "Departure_Hour"]
+    # numeric_cols = ["Turnaround_Time_Mins", "Departure_Hour"]
+    numeric_cols = ["Departure_Hour"]
 
     indexers = [
         StringIndexer(inputCol=c, outputCol=f"{c}_index", handleInvalid="keep")

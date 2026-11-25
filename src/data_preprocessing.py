@@ -7,16 +7,11 @@ from pyspark.sql.window import Window
 
 
 def readCSV(spark, path, fraction=None):
-    data = spark.read.csv(
-        path,
-        header=True,
-        inferSchema=True,
-        # mergeSchema is useful if some years have extra columns
-        # We pass it via option to handle schema variations gracefully
-    )
-    if not fraction or fraction <= 0:
-        return data
-    return data.sample(fraction=fraction, seed=42)
+    """Read CSV(s). If 0 < fraction < 1, sample that fraction."""
+    data = spark.read.csv(path, header=True, inferSchema=True)
+    if fraction is not None and 0 < fraction < 1:
+        return data.sample(fraction=fraction, seed=42)
+    return data
 
 
 def load_and_combine_flight_data(spark, folder_path):
@@ -65,7 +60,9 @@ def run_preprocessing():
     flight_data_path = f"D:/Work/Individual/Um Sara/-- CS435 Big Data/Final Project/flight_with_weather_2024.csv"
 
     # TODO: REPLACE WITH THE PATH TO YOUR WEATHER CSV FILE
-    weather_data_path = f"D:/dWork/Individual/Um Sara/-- CS435 Big Data/Final Project/daily_weather.csv"
+    weather_data_path = (
+        f"D:/dWork/Individual/Um Sara/-- CS435 Big Data/Final Project/daily_weather.csv"
+    )
 
     # # 1. Load and Combine Flight Data (if multible csv files)
     # df_flights = load_and_combine_flight_data(spark, flight_data_path)
@@ -82,27 +79,19 @@ def run_preprocessing():
     # TODO: VERIFY THE COLUMN NAMES AGAINST YOUR AEOLUS CSV
     # a. Convert Time Columns to Timestamps for calculations
     df_flights = df_flights.withColumn(
-        "ScheduledDep",
-        unix_timestamp(col("FL_DATE") + col("CRS_DEP_TIME"), "yyyy-MM-dd HHmm").cast(
-            "timestamp"
-        ),
+        "ScheduledDep", col("CRS_DEP_TIME").cast("timestamp")
     )
-    df_flights = df_flights.withColumn(
-        "ActualArr",
-        unix_timestamp(col("FL_DATE") + col("ARR_TIME"), "yyyy-MM-dd HHmm").cast(
-            "timestamp"
-        ),
-    )
+    df_flights = df_flights.withColumn("ActualArr", col("ARR_TIME").cast("timestamp"))
 
     # b. Calculate Turnaround Time (Propagated Delays)
-    window_spec = Window.partitionBy("TAIL_NUM").orderBy("ScheduledDep")
-    df_flights = df_flights.withColumn(
-        "PreviousArrTime", lag("ActualArr", 1).over(window_spec)
-    )
-    df_flights = df_flights.withColumn(
-        "Turnaround_Time_Mins",
-        (unix_timestamp("ScheduledDep") - unix_timestamp("PreviousArrTime")) / 60,
-    )
+    # window_spec = Window.partitionBy("TAIL_NUM").orderBy("ScheduledDep")
+    # df_flights = df_flights.withColumn(
+    #     "PreviousArrTime", lag("ActualArr", 1).over(window_spec)
+    # )
+    # df_flights = df_flights.withColumn(
+    #     "Turnaround_Time_Mins",
+    #     (unix_timestamp("ScheduledDep") - unix_timestamp("PreviousArrTime")) / 60,
+    # )
 
     # c. Time of Day Feature
     df_flights = df_flights.withColumn("Departure_Hour", hour("ScheduledDep"))
@@ -125,20 +114,19 @@ def run_preprocessing():
 
     # 4. Handle Missing Values
     df_flights = df_flights.dropna(
-        subset=["DEP_DELAY", "Turnaround_Time_Mins", "Time_of_Day"]
+        # subset=["DEP_DELAY", "Turnaround_Time_Mins", "Time_of_Day"]
+        subset=["DEP_DELAY", "Time_of_Day"]
     )
 
-    # TODO: UNCOMMENT AND FIX THIS SECTION ONCE YOU VERIFY THE WEATHER CSV DATE FORMAT
     df_flights = df_flights.withColumn("JoinDate", col("FL_DATE"))
-    df_weather = df_weather.withColumn("JoinDate", col("date")) # Adjust based on weather CSV
+    df_weather = df_weather.withColumn("JoinDate", col("date"))
+    df_weather = df_weather.dropDuplicates(["JoinDate"])
+
     df_merged = df_flights.join(df_weather, on="JoinDate", how="left")
 
     print("Data Preprocessing Complete. Saving to Parquet for fast training...")
 
-    # TODO: CHANGE THIS SAVE PATH TO YOUR DESIRED LOCATION
-    df_merged.coalesce(10).write.mode("overwrite").parquet(
-        "processed_flights.parquet"
-    )
+    df_merged.coalesce(10).write.mode("overwrite").parquet("processed_flights.parquet")
 
     print("Preprocessing finished successfully!\n")
     spark.stop()
