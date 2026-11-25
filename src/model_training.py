@@ -5,7 +5,7 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml import Pipeline
 
 
-def run_training():
+def run_training(trained_model_path="flight_delay_rf_model"):
     print("--- Starting Model Training ---")
     spark = SparkSession.builder.appName("FlightDelay_Modeling").getOrCreate()
 
@@ -21,12 +21,15 @@ def run_training():
         "ORIGIN",
         "DEST",
         "Delay_Category",
+        "O_TEMP",
+        "O_PRCP",
+        "O_WSPD",
     ]
     df = df.select(*columns_to_keep).dropna()
 
     categorical_cols = ["Time_of_Day", "OP_CARRIER", "ORIGIN", "DEST"]
-    # numeric_cols = ["Turnaround_Time_Mins", "Departure_Hour"]
-    numeric_cols = ["Departure_Hour"]
+    # numeric_cols = ["Turnaround_Time_Mins", "Departure_Hour", "O_TEMP", "O_PRCP", "O_WSPD"]
+    numeric_cols = ["Departure_Hour", "O_TEMP", "O_PRCP", "O_WSPD"]
 
     indexers = [
         StringIndexer(inputCol=c, outputCol=f"{c}_index", handleInvalid="keep")
@@ -70,8 +73,7 @@ def run_training():
         "Delay_Category", "prediction"
     ).show()
 
-    # TODO: CHANGE THIS SAVE PATH TO YOUR DESIRED LOCATION
-    model.write().overwrite().save("flight_delay_rf_model")
+    model.write().overwrite().save(trained_model_path)
     print("Model saved successfully!\n")
     spark.stop()
     return True
