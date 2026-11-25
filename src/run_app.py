@@ -4,19 +4,21 @@ from pyspark.sql import SparkSession
 from pyspark.ml import PipelineModel
 from pyspark.ml.linalg import Vectors
 
+MODEL_PATH = "flight_delay_rf_model"
+
 
 # 1. Initialize Spark and Load Model
 # Note: Running Spark inside Streamlit is heavy. For a production app, you'd use a Flask API backend.
 # For this project, we load the Spark model and use it.
 @st.cache_resource
-def load_model():
+def load_model(model_path):
     spark = SparkSession.builder.appName("FlightDelay_Dashboard").getOrCreate()
     # TODO: CHANGE THIS TO MATCH THE SAVE PATH IN model_training.py
-    model = PipelineModel.load("flight_delay_rf_model")
+    model = PipelineModel.load(model_path)
     return spark, model
 
 
-spark, model = load_model()
+spark, model = load_model(MODEL_PATH)
 
 # 2. Define the UI
 st.title("✈️ SkyCast: Flight Delay Predictor")
@@ -31,16 +33,12 @@ with col1:
 
 with col2:
     dest = st.text_input("Destination Airport (e.g., LAX)", "LAX")
-    turnaround = st.number_input(
-        "Aircraft Turnaround Time (Minutes)", min_value=0, max_value=600, value=60
-    )
-    # TODO: ADD THESE FIELDS TO THE UI IF USING WEATHER DATA
-    precipitation = st.number_input(
-        "Precipitation (mm)", min_value=0.0, max_value=100.0, value=0.0
-    )
-    wind_speed = st.number_input(
-        "Wind Speed (m/s)", min_value=0.0, max_value=50.0, value=5.0
-    )
+    # turnaround = st.number_input(
+    #     "Aircraft Turnaround Time (Minutes)", min_value=0, max_value=600, value=60
+    # )
+    o_temp = st.number_input("Origin Temperature (°F)", -50.0, 130.0, 60.0)
+    o_prcp = st.number_input("Origin Precipitation (in)", 0.0, 10.0, 0.0)
+    o_wspd = st.number_input("Origin Wind Speed (mph)", 0.0, 100.0, 5.0)
 
 # Map hour to Time_of_Day
 if 5 <= departure_hour < 12:
@@ -54,21 +52,17 @@ else:
 
 # 3. Prediction Logic
 if st.button("Predict Delay Category"):
-    # Create a dataframe matching the model's expected input columns (BEFORE vector assembler)
-    # Spark models expect a DataFrame with the original columns.
-    # TODO: ENSURE THESE COLUMNS MATCH THE TRAINING SCRIPT EXACTLY
-    # If you added weather columns, add them here and in the UI above.
     input_data = [
         (
-            turnaround,
+            # turnaround,
             departure_hour,
             time_of_day,
             airline,
             origin,
             dest,
-            # temprature,
-            precipitation,
-            wind_speed,
+            o_temp,
+            o_prcp,
+            o_wspd,
         )
     ]
 
@@ -79,7 +73,7 @@ if st.button("Predict Delay Category"):
         "OP_CARRIER",
         "ORIGIN",
         "DEST",
-        # "O_TEMP",
+        "O_TEMP",
         "O_PRCP",
         "O_WSPD",
     ]
