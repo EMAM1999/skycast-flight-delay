@@ -46,7 +46,7 @@ def load_and_combine_flight_data_manual(spark, folder_path):
     return reduce(DataFrame.unionByName, dfs)
 
 
-def run_preprocessing():
+def run_preprocessing(processed_data_path):
     print("--- Starting Data Preprocessing ---")
 
     spark = (
@@ -126,7 +126,7 @@ def run_preprocessing():
 
     print("Data Preprocessing Complete. Saving to Parquet for fast training...")
 
-    df_merged.coalesce(10).write.mode("overwrite").parquet("processed_flights.parquet")
+    df_merged.coalesce(10).write.mode("overwrite").parquet(processed_data_path)
 
     print("Preprocessing finished successfully!\n")
     spark.stop()
@@ -134,4 +134,4 @@ def run_preprocessing():
 
 
 if __name__ == "__main__":
-    run_preprocessing()
+    run_preprocessing(processed_data_path="processed_flights.parquet")

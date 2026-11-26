@@ -5,14 +5,12 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml import Pipeline
 
 
-def run_training(trained_model_path="flight_delay_rf_model"):
+def run_training(processed_data_path, trained_model_path):
     print("--- Starting Model Training ---")
     spark = SparkSession.builder.appName("FlightDelay_Modeling").getOrCreate()
 
-    # TODO: ENSURE THIS MATCHES THE SAVE PATH IN data_preprocessing.py
-    df = spark.read.parquet("processed_flights.parquet")
+    df = spark.read.parquet(processed_data_path)
 
-    # TODO: UPDATE THESE COLUMN LISTS BASED ON YOUR ACTUAL DATA
     columns_to_keep = [
         # "Turnaround_Time_Mins",
         "Departure_Hour",
@@ -80,4 +78,4 @@ def run_training(trained_model_path="flight_delay_rf_model"):
 
 
 if __name__ == "__main__":
-    run_training()
+    run_training(processed_data_path="processed_flights.parquet", trained_model_path="flight_delay_rf_model")
