@@ -54,6 +54,7 @@ Per instructor guidance, delays are **binned into hours** rather than minutes to
 
 ## 🗂️ Repository Structure
 skycast-flight-delay/
+```bash
 │
 └── src/ 
     ├── data_preprocessing.py # Load, clean, engineer features, join weather, save Parquet
@@ -66,7 +67,7 @@ skycast-flight-delay/
 └── data/ # (gitignored) place raw CSVs here
     ├── flight_with_weather_2024.csv
     └── daily_weather.csv
-
+```
 ---
 
 ## 📊 Datasets
