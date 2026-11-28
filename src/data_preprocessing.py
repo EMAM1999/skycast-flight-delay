@@ -60,7 +60,7 @@ def is_directory(data_path: str):
     return os.path.isdir(data_path)
 
 
-def run_preprocessing(input_data, processed_data_path):
+def run_preprocessing(input_data: list, processed_data_path: str):
     print("--- Starting Data Preprocessing ---")
 
     spark = (
