@@ -3,8 +3,7 @@ import pandas as pd
 from pyspark.sql import SparkSession
 from pyspark.ml import PipelineModel
 from pyspark.ml.linalg import Vectors
-
-MODEL_PATH = "flight_delay_rf_model"
+from config import *
 
 
 # 1. Initialize Spark and Load Model
@@ -13,7 +12,6 @@ MODEL_PATH = "flight_delay_rf_model"
 @st.cache_resource
 def load_model(model_path):
     spark = SparkSession.builder.appName("FlightDelay_Dashboard").getOrCreate()
-    # TODO: CHANGE THIS TO MATCH THE SAVE PATH IN model_training.py
     model = PipelineModel.load(model_path)
     return spark, model
 

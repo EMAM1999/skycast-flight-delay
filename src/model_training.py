@@ -3,6 +3,7 @@ from pyspark.ml.feature import StringIndexer, VectorAssembler, OneHotEncoder
 from pyspark.ml.classification import RandomForestClassifier
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml import Pipeline
+from config import *
 
 
 def run_training(processed_data_path, trained_model_path):
@@ -78,4 +79,6 @@ def run_training(processed_data_path, trained_model_path):
 
 
 if __name__ == "__main__":
-    run_training(processed_data_path="processed_flights.parquet", trained_model_path="flight_delay_rf_model")
+    run_training(
+        processed_data_path=CLEANED_DATA_PATH, trained_model_path=MODEL_PATH
+    )
