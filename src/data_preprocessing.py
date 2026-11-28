@@ -14,7 +14,7 @@ def readCSV(spark, path, fraction=None):
     return data
 
 
-def load_and_combine_flight_data(spark, folder_path):
+def load_and_combine_flight_data(spark, folder_path, fraction):
     """
     Finds all CSV files in the given folder and combines them into a single DataFrame.
     Uses Spark's native wildcard reading for maximum performance.
@@ -30,8 +30,7 @@ def load_and_combine_flight_data(spark, folder_path):
 
     print("Loading and combining files...")
     # Spark will automatically combine all files matching the wildcard into one DataFrame
-    # TODO: 44GB of CSV data will require a lot of memory. You need to limit the data.
-    return readCSV(spark, wildcard_path, 0.1)
+    return readCSV(spark, wildcard_path, fraction)
 
 
 # --- FALLBACK FUNCTION (Only use if the wildcard method fails due to schema mismatch) ---
@@ -46,7 +45,11 @@ def load_and_combine_flight_data_manual(spark, folder_path):
     return reduce(DataFrame.unionByName, dfs)
 
 
-def run_preprocessing(processed_data_path):
+def is_directory(data_path: str):
+    return os.path.isdir(data_path)
+
+
+def run_preprocessing(input_data, processed_data_path):
     print("--- Starting Data Preprocessing ---")
 
     spark = (
@@ -55,20 +58,18 @@ def run_preprocessing(processed_data_path):
         .getOrCreate()
     )
 
-    # TODO: REPLACE WITH THE PATH TO THE FOLDER CONTAINING YOUR YEARLY FLIGHT CSVs
     # Example: "C:/Data/Flights_CSVs/" or "/dbfs/FileStore/flights/"
-    flight_data_path = f"D:/Work/Individual/Um Sara/-- CS435 Big Data/Final Project/flight_with_weather_2024.csv"
+    flight_data_path = input_data[0]
 
-    # TODO: REPLACE WITH THE PATH TO YOUR WEATHER CSV FILE
-    weather_data_path = (
-        f"D:/dWork/Individual/Um Sara/-- CS435 Big Data/Final Project/daily_weather.csv"
-    )
+    weather_data_path = input_data[1]
 
-    # # 1. Load and Combine Flight Data (if multible csv files)
-    # df_flights = load_and_combine_flight_data(spark, flight_data_path)
-    # 1. Load Flight Data
+    # 1. Load and Combine Flight Data (if multible csv files)
     print("Loading Flight Data...")
-    df_flights = readCSV(spark, flight_data_path, 0.1)
+    df_flights = (
+        load_and_combine_flight_data(spark, flight_data_path, 0.1)
+        if is_directory(flight_data_path)
+        else readCSV(spark, flight_data_path, 0.1)
+    )
 
     # 2. Load Weather Data
     print("Loading Weather Data...")
@@ -76,7 +77,6 @@ def run_preprocessing(processed_data_path):
 
     print(f"Total combined flight records: {df_flights.count()}")
 
-    # TODO: VERIFY THE COLUMN NAMES AGAINST YOUR AEOLUS CSV
     # a. Convert Time Columns to Timestamps for calculations
     df_flights = df_flights.withColumn(
         "ScheduledDep", col("CRS_DEP_TIME").cast("timestamp")
@@ -134,4 +134,10 @@ def run_preprocessing(processed_data_path):
 
 
 if __name__ == "__main__":
-    run_preprocessing(processed_data_path="processed_flights.parquet")
+    run_preprocessing(
+        input_data=[
+            f"absolute/path/to/folder/flight_with_weather_2024.csv",
+            f"absolute/path/to/folder/daily_weather.csv",
+        ],
+        processed_data_path="processed_flights.parquet",
+    )
